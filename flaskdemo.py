@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, session
+from flask import Flask, render_template, request, session, redirect, url_for
 import wikipedia
 
 app = Flask(__name__)
@@ -13,7 +13,7 @@ def home():
 
 @app.route('/about')
 def about():
-    return "I am still working on this"
+    return render_template("about.html")
 
 
 @app.route('/search', methods=['POST', 'GET'])
@@ -35,19 +35,21 @@ def get_page(search_term):
     try:
         page = wikipedia.page(search_term)
     except wikipedia.exceptions.PageError:
-        # no such page, return a random one
-        page = wikipedia.page(wikipedia.random())
+        # no such page, return None
+        return None
     except wikipedia.exceptions.DisambiguationError:
         # this is a disambiguation page, get the first real page (close enough)
         page_titles = wikipedia.search(search_term)
         # sometimes the next page has the same name (different caps), so don't try the same again
         if page_titles[1].lower() == page_titles[0].lower():
-            title = page_titles[2]
+            title = page_titles[2] if len(page_titles) > 2 else page_titles[0]
         else:
             title = page_titles[1]
-        page = get_page(wikipedia.page(title))
+        try:
+            page = wikipedia.page(title)
+        except Exception:
+            return None
     return page
-
 
 if __name__ == '__main__':
     app.run()
